@@ -12,10 +12,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func setupRepositoryTest(t *testing.T) (*gorm.DB, sqlmock.Sqlmock, Repository) {
+func setupRepositoryTest(t *testing.T) (sqlmock.Sqlmock, Repository) {
 	_, gormDB, sqlMock := testutil.DBMock(t)
 	userRepo := &repository{db: gormDB}
-	return gormDB, sqlMock, userRepo
+	return sqlMock, userRepo
 }
 
 func TestNewRepository(t *testing.T) {
@@ -74,7 +74,7 @@ func Test_repository_Create(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, sqlMock, userRepo := setupRepositoryTest(t)
+			sqlMock, userRepo := setupRepositoryTest(t)
 
 			tt.mockFn(sqlMock)
 			err := userRepo.Create(context.Background(), tt.user)
@@ -132,7 +132,7 @@ func Test_repository_FindByEmail(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, sqlMock, userRepo := setupRepositoryTest(t)
+			sqlMock, userRepo := setupRepositoryTest(t)
 
 			tt.mockFn(sqlMock)
 			got, err := userRepo.FindByEmail(context.Background(), mockUser.Email)
