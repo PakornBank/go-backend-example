@@ -13,7 +13,7 @@ type Service interface {
 	GetUserByID(ctx context.Context, id string) (*model.User, error)
 }
 
-// Service is a struct that provides methods to interact with the user service.
+// service is a struct that provides methods to interact with the user service.
 type service struct {
 	repository  Repository
 	jwtSecret   []byte

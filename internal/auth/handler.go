@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Handler defines the interface for authentication-related HTTP requests.
 type Handler interface {
 	Register(c *gin.Context)
 	Login(c *gin.Context)

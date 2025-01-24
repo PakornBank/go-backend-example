@@ -32,7 +32,7 @@ func setupHandlerTest(middleware gin.HandlerFunc) (*gin.Engine, *MockService) {
 	gin.SetMode(gin.TestMode)
 
 	mockService := new(MockService)
-	authHandler := &handler{service: mockService}
+	userHandler := &handler{service: mockService}
 
 	router := gin.New()
 	group := router.Group("/api")
@@ -40,7 +40,7 @@ func setupHandlerTest(middleware gin.HandlerFunc) (*gin.Engine, *MockService) {
 		group.Use(middleware)
 	}
 	{
-		group.GET("/profile", authHandler.GetProfile)
+		group.GET("/profile", userHandler.GetProfile)
 	}
 
 	return router, mockService
@@ -76,16 +76,16 @@ func Test_handler_GetProfile(t *testing.T) {
 			wantCode: http.StatusOK,
 		},
 		{
-			name: "auth_service error",
+			name: "user_service error",
 			middleware: func(c *gin.Context) {
 				c.Set("user_id", user.ID.String())
 			},
 			mockFn: func(ms *MockService) {
 				ms.On("GetUserByID", mock.Anything, user.ID.String()).
-					Return(nil, errors.New("auth_service error"))
+					Return(nil, errors.New("user_service error"))
 			},
 			wantCode:    http.StatusNotFound,
-			errContains: "auth_service error",
+			errContains: "user_service error",
 		},
 		{
 			name:        "no user_id input context",

@@ -30,7 +30,7 @@ type Service interface {
 	Login(ctx context.Context, input LoginInput) (string, error)
 }
 
-// Service is a struct that provides methods to interact with the authentication service.
+// service is a struct that provides methods to interact with the authentication service.
 type service struct {
 	repository  Repository
 	jwtSecret   []byte
