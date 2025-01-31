@@ -2,7 +2,6 @@ package auth
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -10,49 +9,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/PakornBank/go-backend-example/internal/common/model"
 	"github.com/PakornBank/go-backend-example/internal/common/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"go.uber.org/mock/gomock"
 )
 
-type MockService struct {
-	mock.Mock
-}
-
-func (ms *MockService) Register(ctx context.Context, input RegisterInput) (*model.User, error) {
-	args := ms.Called(ctx, input)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*model.User), args.Error(1)
-}
-
-func (ms *MockService) Login(ctx context.Context, input LoginInput) (string, error) {
-	args := ms.Called(ctx, input)
-	return args.Get(0).(string), args.Error(1)
-}
-
-func (ms *MockService) GetUserByID(ctx context.Context, id string) (*model.User, error) {
-	args := ms.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*model.User), args.Error(1)
-}
-
-func setupHandlerTest(middleware gin.HandlerFunc) (*gin.Engine, *MockService) {
+func setupHandlerTest(t *testing.T) (*gin.Engine, *MockService) {
 	gin.SetMode(gin.TestMode)
-
-	mockService := new(MockService)
+	ctrl := gomock.NewController(t)
+	mockService := NewMockService(ctrl)
 	authHandler := &handler{service: mockService}
 
 	router := gin.New()
 	group := router.Group("/api")
-	if middleware != nil {
-		group.Use(middleware)
-	}
 	{
 		group.POST("/register", authHandler.Register)
 		group.POST("/login", authHandler.Login)
@@ -62,7 +32,8 @@ func setupHandlerTest(middleware gin.HandlerFunc) (*gin.Engine, *MockService) {
 }
 
 func TestNewHandler(t *testing.T) {
-	mockService := new(MockService)
+	ctrl := gomock.NewController(t)
+	mockService := NewMockService(ctrl)
 	authHandler := NewHandler(mockService)
 
 	assert.NotNil(t, authHandler)
@@ -87,11 +58,13 @@ func Test_handler_Register(t *testing.T) {
 				FullName: user.FullName,
 			},
 			mockFn: func(ms *MockService) {
-				ms.On("Register", mock.Anything, mock.MatchedBy(func(input RegisterInput) bool {
-					return input.Email == user.Email &&
-						input.FullName == user.FullName &&
-						input.Password == "password"
-				})).Return(&user, nil)
+				ms.EXPECT().Register(gomock.Any(), gomock.Eq(
+					RegisterInput{
+						Email:    user.Email,
+						FullName: user.FullName,
+						Password: "password",
+					}),
+				).Return(&user, nil)
 			},
 			wantCode: http.StatusCreated,
 		},
@@ -103,11 +76,13 @@ func Test_handler_Register(t *testing.T) {
 				FullName: user.FullName,
 			},
 			mockFn: func(ms *MockService) {
-				ms.On("Register", mock.Anything, mock.MatchedBy(func(input RegisterInput) bool {
-					return input.Email == user.Email &&
-						input.FullName == user.FullName &&
-						input.Password == "password"
-				})).Return(nil, errors.New("auth_service error"))
+				ms.EXPECT().Register(gomock.Any(), gomock.Eq(
+					RegisterInput{
+						Email:    user.Email,
+						FullName: user.FullName,
+						Password: "password",
+					}),
+				).Return(nil, errors.New("auth_service error"))
 			},
 			wantCode:    http.StatusBadRequest,
 			errContains: "auth_service error",
@@ -146,7 +121,7 @@ func Test_handler_Register(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			router, mockService := setupHandlerTest(nil)
+			router, mockService := setupHandlerTest(t)
 			if tt.mockFn != nil {
 				tt.mockFn(mockService)
 			}
@@ -176,8 +151,6 @@ func Test_handler_Register(t *testing.T) {
 			} else {
 				assert.Contains(t, res["error"], tt.errContains)
 			}
-
-			mockService.AssertExpectations(t)
 		})
 	}
 }
@@ -203,9 +176,13 @@ func Test_handler_Login(t *testing.T) {
 				Password: testPassword,
 			},
 			mockFn: func(ms *MockService) {
-				ms.On("Login", mock.Anything, mock.MatchedBy(func(input LoginInput) bool {
-					return input.Email == testEmail && input.Password == testPassword
-				})).Return(testToken, nil)
+
+				ms.EXPECT().Login(gomock.Any(), gomock.Eq(
+					LoginInput{
+						Email:    testEmail,
+						Password: testPassword,
+					}),
+				).Return(testToken, nil)
 			},
 			wantCode: http.StatusOK,
 		},
@@ -216,9 +193,12 @@ func Test_handler_Login(t *testing.T) {
 				Password: testPassword,
 			},
 			mockFn: func(ms *MockService) {
-				ms.On("Login", mock.Anything, mock.MatchedBy(func(input LoginInput) bool {
-					return input.Email == testEmail && input.Password == testPassword
-				})).Return("", errors.New("auth_service error"))
+				ms.EXPECT().Login(gomock.Any(), gomock.Eq(
+					LoginInput{
+						Email:    testEmail,
+						Password: testPassword,
+					}),
+				).Return("", errors.New("auth_service error"))
 			},
 			wantCode:    http.StatusBadRequest,
 			errContains: "auth_service error",
@@ -245,7 +225,7 @@ func Test_handler_Login(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			router, mockService := setupHandlerTest(nil)
+			router, mockService := setupHandlerTest(t)
 			if tt.mockFn != nil {
 				tt.mockFn(mockService)
 			}
@@ -270,8 +250,6 @@ func Test_handler_Login(t *testing.T) {
 			} else {
 				assert.Contains(t, res["error"], tt.errContains)
 			}
-
-			mockService.AssertExpectations(t)
 		})
 	}
 }

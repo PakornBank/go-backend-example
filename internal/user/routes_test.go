@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/PakornBank/go-backend-example/internal/common/config"
-	"github.com/PakornBank/go-backend-example/internal/common/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type routeInfo struct {
@@ -40,12 +40,13 @@ func TestRegisterRoutes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			router := gin.New()
 			group := router.Group("/")
-			_, db, _ := testutil.DBMock(t)
+			ctrl := gomock.NewController(t)
+			h := NewMockHandler(ctrl)
 			cfg := &config.Config{
 				JWTSecret: "test-secret",
 			}
 
-			RegisterRoutes(group, db, cfg)
+			RegisterRoutes(group, h, cfg)
 
 			routes := router.Routes()
 			assert.Equal(t, 1, len(routes))

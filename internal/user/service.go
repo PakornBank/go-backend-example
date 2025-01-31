@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/PakornBank/go-backend-example/internal/common/config"
 	"github.com/PakornBank/go-backend-example/internal/common/model"
 )
+
+//go:generate mockgen -destination=./service_mock.go -package=user github.com/PakornBank/go-backend-example/internal/user Service
 
 // Service defines the methods that a service must implement.
 type Service interface {
@@ -21,11 +22,9 @@ type service struct {
 }
 
 // NewService creates a new instance of service with the provided repository and configuration.
-func NewService(repository Repository, config *config.Config) Service {
+func NewService(repository Repository) Service {
 	return &service{
-		repository:  repository,
-		jwtSecret:   []byte(config.JWTSecret),
-		tokenExpiry: config.TokenExpiryDur,
+		repository: repository,
 	}
 }
 

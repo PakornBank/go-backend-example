@@ -1,7 +1,6 @@
 package user
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -13,25 +12,13 @@ import (
 	"github.com/PakornBank/go-backend-example/internal/common/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"go.uber.org/mock/gomock"
 )
 
-type MockService struct {
-	mock.Mock
-}
-
-func (ms *MockService) GetUserByID(ctx context.Context, id string) (*model.User, error) {
-	args := ms.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*model.User), args.Error(1)
-}
-
-func setupHandlerTest(middleware gin.HandlerFunc) (*gin.Engine, *MockService) {
+func setupHandlerTest(ctrl *gomock.Controller, middleware gin.HandlerFunc) (*gin.Engine, *MockService) {
 	gin.SetMode(gin.TestMode)
 
-	mockService := new(MockService)
+	mockService := NewMockService(ctrl)
 	userHandler := &handler{service: mockService}
 
 	router := gin.New()
@@ -70,8 +57,7 @@ func Test_handler_GetProfile(t *testing.T) {
 				c.Set("user_id", user.ID.String())
 			},
 			mockFn: func(ms *MockService) {
-				ms.On("GetUserByID", mock.Anything, user.ID.String()).
-					Return(&user, nil)
+				ms.EXPECT().GetUserByID(gomock.Any(), user.ID.String()).Return(&user, nil)
 			},
 			wantCode: http.StatusOK,
 		},
@@ -81,8 +67,7 @@ func Test_handler_GetProfile(t *testing.T) {
 				c.Set("user_id", user.ID.String())
 			},
 			mockFn: func(ms *MockService) {
-				ms.On("GetUserByID", mock.Anything, user.ID.String()).
-					Return(nil, errors.New("user_service error"))
+				ms.EXPECT().GetUserByID(gomock.Any(), user.ID.String()).Return(nil, errors.New("user_service error"))
 			},
 			wantCode:    http.StatusNotFound,
 			errContains: "user_service error",
@@ -96,7 +81,8 @@ func Test_handler_GetProfile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			router, mockService := setupHandlerTest(tt.middleware)
+			ctrl := gomock.NewController(t)
+			router, mockService := setupHandlerTest(ctrl, tt.middleware)
 			if tt.mockFn != nil {
 				tt.mockFn(mockService)
 			}
@@ -126,8 +112,6 @@ func Test_handler_GetProfile(t *testing.T) {
 
 				assert.Contains(t, res["error"], tt.errContains)
 			}
-
-			mockService.AssertExpectations(t)
 		})
 	}
 }

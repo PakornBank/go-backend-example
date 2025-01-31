@@ -7,6 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockgen -destination=./repository_mock.go -package=user github.com/PakornBank/go-backend-example/internal/user Repository
+
 // Repository defines the methods that a repository must implement.
 type Repository interface {
 	FindByID(ctx context.Context, id string) (*model.User, error)

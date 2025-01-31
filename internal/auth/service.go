@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//go:generate mockgen -destination=./service_mock.go -package=auth github.com/PakornBank/go-backend-example/internal/auth Service
+
 // RegisterInput is a struct that contains the input fields for the Register method.
 type RegisterInput struct {
 	Email    string `json:"email" binding:"required,email"`

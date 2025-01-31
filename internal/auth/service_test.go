@@ -10,38 +10,14 @@ import (
 	"github.com/PakornBank/go-backend-example/internal/common/testutil"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"go.uber.org/mock/gomock"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-type MockRepository struct {
-	mock.Mock
-}
-
-func (r *MockRepository) Create(ctx context.Context, user *model.User) error {
-	args := r.Called(ctx, user)
-	return args.Error(0)
-}
-
-func (r *MockRepository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
-	args := r.Called(ctx, email)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*model.User), args.Error(1)
-}
-
-func (r *MockRepository) FindByID(ctx context.Context, id string) (*model.User, error) {
-	args := r.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*model.User), args.Error(1)
-}
-
-func setupServiceTest() (Service, *MockRepository) {
-	mockRepo := new(MockRepository)
+func setupServiceTest(t *testing.T) (Service, *MockRepository) {
+	ctrl := gomock.NewController(t)
+	mockRepo := NewMockRepository(ctrl)
 	authService := &service{
 		repository:  mockRepo,
 		jwtSecret:   []byte("test-secret"),
@@ -81,9 +57,9 @@ func Test_service_Register(t *testing.T) {
 				Password: "password",
 				FullName: mockUser.FullName,
 			},
-			mockFn: func(repo *MockRepository) {
-				repo.On("FindByEmail", mock.Anything, mockUser.Email).Return(nil, gorm.ErrRecordNotFound)
-				repo.On("Create", mock.Anything, mock.AnythingOfType("*model.User")).Return(nil)
+			mockFn: func(mr *MockRepository) {
+				mr.EXPECT().Create(gomock.Any(), gomock.AssignableToTypeOf(&model.User{})).Return(nil)
+				mr.EXPECT().FindByEmail(gomock.Any(), mockUser.Email).Return(nil, gorm.ErrRecordNotFound)
 			},
 			wantErr: false,
 		},
@@ -94,8 +70,8 @@ func Test_service_Register(t *testing.T) {
 				Password: "password",
 				FullName: mockUser.FullName,
 			},
-			mockFn: func(repo *MockRepository) {
-				repo.On("FindByEmail", mock.Anything, mockUser.Email).Return(&mockUser, nil)
+			mockFn: func(mr *MockRepository) {
+				mr.EXPECT().FindByEmail(gomock.Any(), mockUser.Email).Return(&mockUser, nil)
 			},
 			wantErr:     true,
 			errContains: "email already registered",
@@ -104,7 +80,7 @@ func Test_service_Register(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			authService, mockRepo := setupServiceTest()
+			authService, mockRepo := setupServiceTest(t)
 			tt.mockFn(mockRepo)
 			user, err := authService.Register(context.Background(), tt.input)
 
@@ -118,7 +94,6 @@ func Test_service_Register(t *testing.T) {
 				assert.Equal(t, tt.input.Email, user.Email)
 				assert.Equal(t, tt.input.FullName, user.FullName)
 			}
-			mockRepo.AssertExpectations(t)
 		})
 	}
 }
@@ -140,9 +115,9 @@ func Test_service_Login(t *testing.T) {
 				Email:    mockUser.Email,
 				Password: "password",
 			},
-			mockFn: func(repo *MockRepository) {
+			mockFn: func(mr *MockRepository) {
 				mockUser.PasswordHash = string(hashedPassword)
-				repo.On("FindByEmail", mock.Anything, mockUser.Email).Return(&mockUser, nil)
+				mr.EXPECT().FindByEmail(gomock.Any(), mockUser.Email).Return(&mockUser, nil)
 			},
 			wantErr: false,
 		},
@@ -152,9 +127,9 @@ func Test_service_Login(t *testing.T) {
 				Email:    mockUser.Email,
 				Password: "wrong password",
 			},
-			mockFn: func(repo *MockRepository) {
+			mockFn: func(mr *MockRepository) {
 				mockUser.PasswordHash = string(hashedPassword)
-				repo.On("FindByEmail", mock.Anything, mockUser.Email).Return(&mockUser, nil)
+				mr.EXPECT().FindByEmail(gomock.Any(), mockUser.Email).Return(&mockUser, nil)
 			},
 			wantErr:     true,
 			errContains: "invalid credentials",
@@ -165,8 +140,8 @@ func Test_service_Login(t *testing.T) {
 				Email:    "nonexistent@example.com",
 				Password: "password",
 			},
-			mockFn: func(repo *MockRepository) {
-				repo.On("FindByEmail", mock.Anything, "nonexistent@example.com").Return(nil, gorm.ErrRecordNotFound)
+			mockFn: func(mr *MockRepository) {
+				mr.EXPECT().FindByEmail(gomock.Any(), "nonexistent@example.com").Return(nil, gorm.ErrRecordNotFound)
 			},
 			wantErr:     true,
 			errContains: "invalid credentials",
@@ -175,7 +150,7 @@ func Test_service_Login(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			authService, mockRepo := setupServiceTest()
+			authService, mockRepo := setupServiceTest(t)
 			tt.mockFn(mockRepo)
 			token, err := authService.Login(context.Background(), tt.input)
 
@@ -187,13 +162,12 @@ func Test_service_Login(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotEmpty(t, token)
 			}
-			mockRepo.AssertExpectations(t)
 		})
 	}
 }
 
 func TestGenerateToken(t *testing.T) {
-	authService, _ := setupServiceTest()
+	authService, _ := setupServiceTest(t)
 	mockUser := testutil.NewMockUser()
 
 	token, err := authService.(*service).generateToken(&mockUser)

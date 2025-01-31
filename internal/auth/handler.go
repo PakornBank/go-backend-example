@@ -6,6 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//go:generate mockgen -destination=./handler_mock.go -package=auth github.com/PakornBank/go-backend-example/internal/auth Handler
+
 // Handler defines the interface for authentication-related HTTP requests.
 type Handler interface {
 	Register(c *gin.Context)

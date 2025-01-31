@@ -6,6 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//go:generate mockgen -destination=./handler_mock.go -package=user github.com/PakornBank/go-backend-example/internal/user Handler
+
 // Handler defines the interface for user-related HTTP requests.
 type Handler interface {
 	GetProfile(c *gin.Context)
