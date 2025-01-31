@@ -6,8 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes registers the user routes with the provided gin router group.
-// It initializes the auth handler with the provided database connection and configuration.
+// RegisterRoutes registers the user routes with the provided gin router group and handler.
 func RegisterRoutes(group *gin.RouterGroup, h Handler, cfg *config.Config) {
 	user := group.Group("/user")
 	{
