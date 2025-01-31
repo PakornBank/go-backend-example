@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/PakornBank/go-backend-example/internal/common/config"
-	"github.com/PakornBank/go-backend-example/internal/common/database"
+	"github.com/PakornBank/go-backend-example/internal/di"
 	"github.com/PakornBank/go-backend-example/internal/router"
 	"github.com/gin-gonic/gin"
 )
@@ -12,19 +12,16 @@ import (
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatal("Failed to load config:", err)
+		log.Fatal("failed to load config: ", err)
 	}
 
-	db, err := database.NewDataBase(cfg)
-	if err != nil {
-		log.Fatal("Failed to initialize database:", err)
-	}
+	container := di.NewContainer(cfg)
 
 	r := gin.Default()
-	router.SetupRoutes(r, db, cfg)
+	router.SetupRoutes(r, container)
 
 	log.Printf("Server running on port %s\n", cfg.ServerPort)
 	if err := r.Run(":" + cfg.ServerPort); err != nil {
-		log.Fatal("Failed to start server:", err)
+		log.Fatal("failed to start server: ", err)
 	}
 }
