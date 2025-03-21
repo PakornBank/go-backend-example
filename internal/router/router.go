@@ -9,6 +9,8 @@ import (
 
 // SetupRoutes call functions to register routes on gin router.
 func SetupRoutes(router *gin.Engine, container *di.Container) {
+	router.GET("/health", container.HealthHandler.Check)
+
 	group := router.Group("/api")
 	auth.RegisterRoutes(group, container.AuthHandler)
 	user.RegisterRoutes(group, container.UserHandler, container.Config)

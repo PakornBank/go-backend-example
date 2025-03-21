@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: go-auth-api-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    # Add other annotations as needed
+spec:
+  rules:
+    - host: go-auth.local  # Replace with your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: go-auth-api-service
+                port:
+                  number: 80
+  # Add TLS config if you have certificates
+  # tls:
+  # - hosts:
+  #   - api.yourdomain.com
+  #   secretName: your-tls-secret

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-auth-api
+  labels:
+    app: go-auth-api
+spec:
+  replicas: 3  # Multiple replicas for load balancing
+  selector:
+    matchLabels:
+      app: go-auth-api
+  template:
+    metadata:
+      labels:
+        app: go-auth-api
+    spec:
+      containers:
+        - name: api
+          image: go-auth-api:latest  # Replace with your Docker image
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: go-auth-api-config
+            - secretRef:
+                name: go-auth-api-secret
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: "256Mi"
+            requests:
+              cpu: "0.1"
+              memory: "128Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
