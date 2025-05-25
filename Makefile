@@ -15,3 +15,6 @@ test:
 
 run:
 	go run ./cmd/api
+
+docker:
+	docker compose up -d

@@ -2,17 +2,16 @@ package main
 
 import (
 	"context"
+	"github.com/PakornBank/go-backend-example/cmd/api/di"
+	"github.com/PakornBank/go-backend-example/cmd/api/routes"
+	"github.com/PakornBank/go-backend-example/internal/common/config"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/PakornBank/go-backend-example/internal/common/config"
-	"github.com/PakornBank/go-backend-example/internal/di"
-	"github.com/PakornBank/go-backend-example/internal/router"
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -24,7 +23,7 @@ func main() {
 	container := di.NewContainer(cfg)
 
 	r := gin.Default()
-	router.SetupRoutes(r, container)
+	routes.SetupRoutes(r, container)
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.ServerPort,

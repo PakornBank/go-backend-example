@@ -1,12 +1,13 @@
 package user
 
 import (
+	"github.com/PakornBank/go-backend-example/internal/user"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-//go:generate mockgen -destination=./handler_mock.go -package=user github.com/PakornBank/go-backend-example/internal/user Handler
+//go:generate mockgen -destination=./handler_mock.go -package=user github.com/PakornBank/go-backend-example/cmd/api/handler/user Handler
 
 // Handler defines the interface for user-related HTTP requests.
 type Handler interface {
@@ -15,11 +16,11 @@ type Handler interface {
 
 // handler handles user-related HTTP requests.
 type handler struct {
-	service Service
+	service user.Service
 }
 
 // NewHandler creates a new instance of handler with the provided service.
-func NewHandler(s Service) Handler {
+func NewHandler(s user.Service) Handler {
 
 	return &handler{service: s}
 }
@@ -32,11 +33,11 @@ func (h *handler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.GetUserByID(c.Request.Context(), id.(string))
+	res, err := h.service.GetUserByID(c.Request.Context(), id.(string))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, res)
 }

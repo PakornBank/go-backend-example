@@ -13,23 +13,10 @@ import (
 
 //go:generate mockgen -destination=./service_mock.go -package=auth github.com/PakornBank/go-backend-example/internal/auth Service
 
-// RegisterInput is a struct that contains the input fields for the Register method.
-type RegisterInput struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
-	FullName string `json:"full_name" binding:"required"`
-}
-
-// LoginInput is a struct that contains the input fields for the Login method.
-type LoginInput struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
-}
-
 // Service defines the methods that a service must implement.
 type Service interface {
-	Register(ctx context.Context, input RegisterInput) (*model.User, error)
-	Login(ctx context.Context, input LoginInput) (string, error)
+	Register(ctx context.Context, email, password, fullName string) (*model.User, error)
+	Login(ctx context.Context, email, password string) (string, error)
 }
 
 // service is a struct that provides methods to interact with the authentication service.
@@ -49,21 +36,21 @@ func NewService(repository Repository, config *config.Config) Service {
 }
 
 // Register handles the user registration process.
-func (s *service) Register(ctx context.Context, input RegisterInput) (*model.User, error) {
-	existingUser, _ := s.repository.FindByEmail(ctx, input.Email)
+func (s *service) Register(ctx context.Context, email, password, fullName string) (*model.User, error) {
+	existingUser, _ := s.repository.FindByEmail(ctx, email)
 	if existingUser != nil {
 		return nil, errors.New("email already registered")
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, errors.New("failed to hash password")
 	}
 
 	user := &model.User{
-		Email:        input.Email,
+		Email:        email,
 		PasswordHash: string(hashedPassword),
-		FullName:     input.FullName,
+		FullName:     fullName,
 	}
 
 	if err := s.repository.Create(ctx, user); err != nil {
@@ -74,13 +61,13 @@ func (s *service) Register(ctx context.Context, input RegisterInput) (*model.Use
 }
 
 // Login handles the user login process.
-func (s *service) Login(ctx context.Context, input LoginInput) (string, error) {
-	user, err := s.repository.FindByEmail(ctx, input.Email)
+func (s *service) Login(ctx context.Context, email, password string) (string, error) {
+	user, err := s.repository.FindByEmail(ctx, email)
 	if err != nil {
 		return "", errors.New("invalid credentials")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return "", errors.New("invalid credentials")
 	}
 

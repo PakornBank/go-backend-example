@@ -1,4 +1,4 @@
-// Package middleware contains middleware for gin router.
+// Package middleware contains middleware for gin routes.
 package middleware
 
 import (

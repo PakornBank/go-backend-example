@@ -14,7 +14,7 @@ import (
 
 func setupRepositoryTest(t *testing.T) (sqlmock.Sqlmock, Repository) {
 	_, gormDB, sqlMock := testutil.DBMock(t)
-	userRepo := &repository{db: gormDB}
+	userRepo := NewRepository(gormDB)
 	return sqlMock, userRepo
 }
 

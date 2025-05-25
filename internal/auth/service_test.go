@@ -15,6 +15,17 @@ import (
 	"gorm.io/gorm"
 )
 
+type registerInput struct {
+	Email    string
+	Password string
+	FullName string
+}
+
+type loginInput struct {
+	Email    string
+	Password string
+}
+
 func setupServiceTest(t *testing.T) (Service, *MockRepository) {
 	ctrl := gomock.NewController(t)
 	mockRepo := NewMockRepository(ctrl)
@@ -45,14 +56,14 @@ func Test_service_Register(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		input       RegisterInput
+		input       registerInput
 		mockFn      func(*MockRepository)
 		wantErr     bool
 		errContains string
 	}{
 		{
 			name: "successful registration",
-			input: RegisterInput{
+			input: registerInput{
 				Email:    mockUser.Email,
 				Password: "password",
 				FullName: mockUser.FullName,
@@ -65,7 +76,7 @@ func Test_service_Register(t *testing.T) {
 		},
 		{
 			name: "email already exists",
-			input: RegisterInput{
+			input: registerInput{
 				Email:    mockUser.Email,
 				Password: "password",
 				FullName: mockUser.FullName,
@@ -82,7 +93,7 @@ func Test_service_Register(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			authService, mockRepo := setupServiceTest(t)
 			tt.mockFn(mockRepo)
-			user, err := authService.Register(context.Background(), tt.input)
+			user, err := authService.Register(context.Background(), tt.input.Email, tt.input.Password, tt.input.FullName)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -104,14 +115,14 @@ func Test_service_Login(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		input       LoginInput
+		input       loginInput
 		mockFn      func(*MockRepository)
 		wantErr     bool
 		errContains string
 	}{
 		{
 			name: "successful login",
-			input: LoginInput{
+			input: loginInput{
 				Email:    mockUser.Email,
 				Password: "password",
 			},
@@ -123,7 +134,7 @@ func Test_service_Login(t *testing.T) {
 		},
 		{
 			name: "invalid credentials",
-			input: LoginInput{
+			input: loginInput{
 				Email:    mockUser.Email,
 				Password: "wrong password",
 			},
@@ -136,7 +147,7 @@ func Test_service_Login(t *testing.T) {
 		},
 		{
 			name: "user not found",
-			input: LoginInput{
+			input: loginInput{
 				Email:    "nonexistent@example.com",
 				Password: "password",
 			},
@@ -152,7 +163,7 @@ func Test_service_Login(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			authService, mockRepo := setupServiceTest(t)
 			tt.mockFn(mockRepo)
-			token, err := authService.Login(context.Background(), tt.input)
+			token, err := authService.Login(context.Background(), tt.input.Email, tt.input.Password)
 
 			if tt.wantErr {
 				assert.Error(t, err)

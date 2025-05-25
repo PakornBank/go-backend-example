@@ -3,6 +3,7 @@ package user
 import (
 	"encoding/json"
 	"errors"
+	"github.com/PakornBank/go-backend-example/internal/user"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,10 +16,10 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func setupHandlerTest(ctrl *gomock.Controller, middleware gin.HandlerFunc) (*gin.Engine, *MockService) {
+func setupHandlerTest(ctrl *gomock.Controller, middleware gin.HandlerFunc) (*gin.Engine, *user.MockService) {
 	gin.SetMode(gin.TestMode)
 
-	mockService := NewMockService(ctrl)
+	mockService := user.NewMockService(ctrl)
 	userHandler := &handler{service: mockService}
 
 	router := gin.New()
@@ -34,7 +35,7 @@ func setupHandlerTest(ctrl *gomock.Controller, middleware gin.HandlerFunc) (*gin
 }
 
 func TestNewHandler(t *testing.T) {
-	mockService := new(MockService)
+	mockService := new(user.MockService)
 	userHandler := NewHandler(mockService)
 
 	assert.NotNil(t, userHandler)
@@ -42,32 +43,32 @@ func TestNewHandler(t *testing.T) {
 }
 
 func Test_handler_GetProfile(t *testing.T) {
-	user := testutil.NewMockUser()
+	mockUser := testutil.NewMockUser()
 
 	tests := []struct {
 		name        string
 		middleware  gin.HandlerFunc
-		mockFn      func(*MockService)
+		mockFn      func(*user.MockService)
 		wantCode    int
 		errContains string
 	}{
 		{
 			name: "successful profile retrieval",
 			middleware: func(c *gin.Context) {
-				c.Set("user_id", user.ID.String())
+				c.Set("user_id", mockUser.ID.String())
 			},
-			mockFn: func(ms *MockService) {
-				ms.EXPECT().GetUserByID(gomock.Any(), user.ID.String()).Return(&user, nil)
+			mockFn: func(ms *user.MockService) {
+				ms.EXPECT().GetUserByID(gomock.Any(), mockUser.ID.String()).Return(&mockUser, nil)
 			},
 			wantCode: http.StatusOK,
 		},
 		{
 			name: "user_service error",
 			middleware: func(c *gin.Context) {
-				c.Set("user_id", user.ID.String())
+				c.Set("user_id", mockUser.ID.String())
 			},
-			mockFn: func(ms *MockService) {
-				ms.EXPECT().GetUserByID(gomock.Any(), user.ID.String()).Return(nil, errors.New("user_service error"))
+			mockFn: func(ms *user.MockService) {
+				ms.EXPECT().GetUserByID(gomock.Any(), mockUser.ID.String()).Return(nil, errors.New("user_service error"))
 			},
 			wantCode:    http.StatusNotFound,
 			errContains: "user_service error",
@@ -99,11 +100,11 @@ func Test_handler_GetProfile(t *testing.T) {
 				err := json.Unmarshal(w.Body.Bytes(), &res)
 				assert.NoError(t, err)
 
-				assert.Equal(t, user.ID, res.ID)
-				assert.Equal(t, user.Email, res.Email)
-				assert.Equal(t, user.FullName, res.FullName)
-				assert.Equal(t, user.CreatedAt.Format(time.RFC3339Nano), res.CreatedAt.Format(time.RFC3339Nano))
-				assert.Equal(t, user.UpdatedAt.Format(time.RFC3339Nano), res.UpdatedAt.Format(time.RFC3339Nano))
+				assert.Equal(t, mockUser.ID, res.ID)
+				assert.Equal(t, mockUser.Email, res.Email)
+				assert.Equal(t, mockUser.FullName, res.FullName)
+				assert.Equal(t, mockUser.CreatedAt.Format(time.RFC3339Nano), res.CreatedAt.Format(time.RFC3339Nano))
+				assert.Equal(t, mockUser.UpdatedAt.Format(time.RFC3339Nano), res.UpdatedAt.Format(time.RFC3339Nano))
 				assert.Empty(t, res.PasswordHash)
 			} else {
 				var res map[string]interface{}

@@ -42,31 +42,31 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // Login mocks base method.
-func (m *MockService) Login(ctx context.Context, input LoginInput) (string, error) {
+func (m *MockService) Login(ctx context.Context, email, password string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Login", ctx, input)
+	ret := m.ctrl.Call(m, "Login", ctx, email, password)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Login indicates an expected call of Login.
-func (mr *MockServiceMockRecorder) Login(ctx, input any) *gomock.Call {
+func (mr *MockServiceMockRecorder) Login(ctx, email, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockService)(nil).Login), ctx, input)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockService)(nil).Login), ctx, email, password)
 }
 
 // Register mocks base method.
-func (m *MockService) Register(ctx context.Context, input RegisterInput) (*model.User, error) {
+func (m *MockService) Register(ctx context.Context, email, password, fullName string) (*model.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Register", ctx, input)
+	ret := m.ctrl.Call(m, "Register", ctx, email, password, fullName)
 	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Register indicates an expected call of Register.
-func (mr *MockServiceMockRecorder) Register(ctx, input any) *gomock.Call {
+func (mr *MockServiceMockRecorder) Register(ctx, email, password, fullName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockService)(nil).Register), ctx, input)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockService)(nil).Register), ctx, email, password, fullName)
 }

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/PakornBank/go-backend-example/cmd/api/model"
+	"github.com/PakornBank/go-backend-example/internal/auth"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,10 +17,10 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func setupHandlerTest(t *testing.T) (*gin.Engine, *MockService) {
+func setupHandlerTest(t *testing.T) (*gin.Engine, *auth.MockService) {
 	gin.SetMode(gin.TestMode)
 	ctrl := gomock.NewController(t)
-	mockService := NewMockService(ctrl)
+	mockService := auth.NewMockService(ctrl)
 	authHandler := &handler{service: mockService}
 
 	router := gin.New()
@@ -33,7 +35,7 @@ func setupHandlerTest(t *testing.T) (*gin.Engine, *MockService) {
 
 func TestNewHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockService := NewMockService(ctrl)
+	mockService := auth.NewMockService(ctrl)
 	authHandler := NewHandler(mockService)
 
 	assert.NotNil(t, authHandler)
@@ -45,51 +47,40 @@ func Test_handler_Register(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		input       RegisterInput
-		mockFn      func(*MockService)
+		input       model.RegisterInput
+		mockFn      func(*auth.MockService)
 		wantCode    int
 		errContains string
 	}{
 		{
 			name: "successful registration",
-			input: RegisterInput{
+			input: model.RegisterInput{
 				Email:    user.Email,
 				Password: "password",
 				FullName: user.FullName,
 			},
-			mockFn: func(ms *MockService) {
-				ms.EXPECT().Register(gomock.Any(), gomock.Eq(
-					RegisterInput{
-						Email:    user.Email,
-						FullName: user.FullName,
-						Password: "password",
-					}),
-				).Return(&user, nil)
+			mockFn: func(ms *auth.MockService) {
+				ms.EXPECT().Register(gomock.Any(), user.Email, "password", user.FullName).Return(&user, nil)
 			},
 			wantCode: http.StatusCreated,
 		},
 		{
 			name: "auth_service error",
-			input: RegisterInput{
+			input: model.RegisterInput{
 				Email:    user.Email,
 				Password: "password",
 				FullName: user.FullName,
 			},
-			mockFn: func(ms *MockService) {
-				ms.EXPECT().Register(gomock.Any(), gomock.Eq(
-					RegisterInput{
-						Email:    user.Email,
-						FullName: user.FullName,
-						Password: "password",
-					}),
-				).Return(nil, errors.New("auth_service error"))
+			mockFn: func(ms *auth.MockService) {
+				ms.EXPECT().Register(gomock.Any(), user.Email, "password", user.FullName).
+					Return(nil, errors.New("auth_service error"))
 			},
 			wantCode:    http.StatusBadRequest,
 			errContains: "auth_service error",
 		},
 		{
 			name: "invalid email",
-			input: RegisterInput{
+			input: model.RegisterInput{
 				Email:    "",
 				Password: "password",
 				FullName: user.FullName,
@@ -99,7 +90,7 @@ func Test_handler_Register(t *testing.T) {
 		},
 		{
 			name: "invalid password",
-			input: RegisterInput{
+			input: model.RegisterInput{
 				Email:    user.Email,
 				Password: "",
 				FullName: user.FullName,
@@ -109,7 +100,7 @@ func Test_handler_Register(t *testing.T) {
 		},
 		{
 			name: "invalid full name",
-			input: RegisterInput{
+			input: model.RegisterInput{
 				Email:    user.Email,
 				Password: "password",
 				FullName: "",
@@ -164,48 +155,38 @@ func Test_handler_Login(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		input       LoginInput
-		mockFn      func(*MockService)
+		input       model.LoginInput
+		mockFn      func(*auth.MockService)
 		wantCode    int
 		errContains string
 	}{
 		{
 			name: "successful login",
-			input: LoginInput{
+			input: model.LoginInput{
 				Email:    testEmail,
 				Password: testPassword,
 			},
-			mockFn: func(ms *MockService) {
+			mockFn: func(ms *auth.MockService) {
 
-				ms.EXPECT().Login(gomock.Any(), gomock.Eq(
-					LoginInput{
-						Email:    testEmail,
-						Password: testPassword,
-					}),
-				).Return(testToken, nil)
+				ms.EXPECT().Login(gomock.Any(), testEmail, testPassword).Return(testToken, nil)
 			},
 			wantCode: http.StatusOK,
 		},
 		{
 			name: "auth_service error",
-			input: LoginInput{
+			input: model.LoginInput{
 				Email:    testEmail,
 				Password: testPassword,
 			},
-			mockFn: func(ms *MockService) {
-				ms.EXPECT().Login(gomock.Any(), gomock.Eq(
-					LoginInput{
-						Email:    testEmail,
-						Password: testPassword,
-					}),
-				).Return("", errors.New("auth_service error"))
+			mockFn: func(ms *auth.MockService) {
+				ms.EXPECT().Login(gomock.Any(), testEmail, testPassword).Return("", errors.New("auth_service error"))
 			},
 			wantCode:    http.StatusBadRequest,
 			errContains: "auth_service error",
 		},
 		{
 			name: "invalid email",
-			input: LoginInput{
+			input: model.LoginInput{
 				Email:    "",
 				Password: testPassword,
 			},
@@ -214,7 +195,7 @@ func Test_handler_Login(t *testing.T) {
 		},
 		{
 			name: "invalid password",
-			input: LoginInput{
+			input: model.LoginInput{
 				Email:    testEmail,
 				Password: "",
 			},

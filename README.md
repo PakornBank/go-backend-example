@@ -69,12 +69,13 @@ JWT_SECRET=your-super-secret-key-here
 ## API Endpoints
 
 ### Public Routes
-- `POST /api/register` - Register a new user
+
+- `POST /api/register` - Register a new userRoutes
 ```bash
 curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "user@example.com",
+    "email": "userRoutes@example.com",
     "password": "password123",
     "full_name": "John Doe"
   }'
@@ -85,15 +86,16 @@ curl -X POST http://localhost:8080/api/auth/register \
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "user@example.com",
+    "email": "userRoutes@example.com",
     "password": "password123"
   }'
 ```
 
 ### Protected Routes (Requires JWT Token)
-- `GET /api/profile` - Get user profile
+
+- `GET /api/profile` - Get userRoutes profile
 ```bash
-curl -X GET http://localhost:8080/api/user/profile \
+curl -X GET http://localhost:8080/api/userRoutes/profile \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 

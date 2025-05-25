@@ -1,14 +1,16 @@
 package di
 
 import (
+	"github.com/PakornBank/go-backend-example/cmd/api/handler/auth"
+	"github.com/PakornBank/go-backend-example/cmd/api/handler/user"
+	internalAuth "github.com/PakornBank/go-backend-example/internal/auth"
 	"github.com/PakornBank/go-backend-example/internal/common/health"
+	internalUser "github.com/PakornBank/go-backend-example/internal/user"
 	"gorm.io/gorm"
 	"log"
 
-	"github.com/PakornBank/go-backend-example/internal/auth"
 	"github.com/PakornBank/go-backend-example/internal/common/config"
 	"github.com/PakornBank/go-backend-example/internal/common/database"
-	"github.com/PakornBank/go-backend-example/internal/user"
 )
 
 // Container holds the dependencies for the application.
@@ -27,8 +29,8 @@ func NewContainer(cfg *config.Config) *Container {
 		log.Fatal("failed to initialize database: ", err)
 	}
 
-	authHandler := auth.NewHandler(auth.NewService(auth.NewRepository(db), cfg))
-	userHandler := user.NewHandler(user.NewService(user.NewRepository(db)))
+	authHandler := auth.NewHandler(internalAuth.NewService(internalAuth.NewRepository(db), cfg))
+	userHandler := user.NewHandler(internalUser.NewService(internalUser.NewRepository(db)))
 	healthHandler := health.NewHandler(db)
 
 	return &Container{
