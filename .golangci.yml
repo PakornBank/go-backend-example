@@ -19,7 +19,6 @@ linters:
     - unparam
     - nakedret
     - prealloc
-    - varnamelen
     - unused
 
 linters-settings:
