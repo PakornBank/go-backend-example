@@ -10,7 +10,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/go-auth-api
-  GO_VERSION: "1.22"
+  GO_VERSION: "1.24"
 
 jobs:
   test:

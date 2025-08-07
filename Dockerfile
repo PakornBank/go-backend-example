@@ -1,8 +1,8 @@
 # Multi-stage build optimized for Go
-FROM golang:1.22-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 # Build arguments
-ARG GO_VERSION=1.22
+ARG GO_VERSION=1.24
 ARG BUILD_DATE
 ARG COMMIT_SHA
 
