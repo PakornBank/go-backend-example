@@ -1,7 +1,7 @@
 .PHONY: setup build test run generate
 
 setup:
-	go mod download
+	go mod tidy
 	go install go.uber.org/mock/mockgen@latest
 
 generate:

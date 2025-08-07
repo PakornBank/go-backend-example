@@ -55,6 +55,7 @@ jobs:
       - name: Generate mocks
         run: |
           go install go.uber.org/mock/mockgen@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
           go generate ./...
 
       - name: Run golangci-lint
