@@ -164,7 +164,7 @@ func TestUser_JSONSerialization(t *testing.T) {
 		assert.Equal(t, user.ID, unmarshalled.ID)
 		assert.Equal(t, user.Email, unmarshalled.Email)
 		assert.Equal(t, user.FullName, unmarshalled.FullName)
-		assert.Equal(t, user.CreatedAt.Truncate(time.Microsecond), unmarshalled.CreatedAt)
-		assert.Equal(t, user.UpdatedAt.Truncate(time.Microsecond), unmarshalled.UpdatedAt)
+		assert.Equal(t, user.CreatedAt.Format(time.RFC3339), unmarshalled.CreatedAt.Format(time.RFC3339))
+		assert.Equal(t, user.UpdatedAt.Format(time.RFC3339), unmarshalled.UpdatedAt.Format(time.RFC3339))
 	})
 }
