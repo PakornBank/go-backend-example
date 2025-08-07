@@ -22,6 +22,7 @@ RUN go mod download
 COPY . .
 
 # Generate mocks and build
+RUN go install go.uber.org/mock/mockgen@latest
 RUN export PATH=$PATH:$(go env GOPATH)/bin
 RUN go generate ./...
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
