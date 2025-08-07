@@ -22,6 +22,7 @@ RUN go mod download
 COPY . .
 
 # Generate mocks and build
+RUN export PATH=$PATH:$(go env GOPATH)/bin
 RUN go generate ./...
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s -extldflags '-static' -X 'main.BuildDate=${BUILD_DATE}' -X 'main.CommitSHA=${COMMIT_SHA}'" \
