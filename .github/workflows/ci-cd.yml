@@ -185,20 +185,30 @@ jobs:
 
           FILE="overlays/production/kustomization.yaml"
 
-          # Ensure images array exists
+          # Show current file content
+          echo "=== Current kustomization.yaml ==="
+          cat "$FILE"
+
+          # Check if images array exists
           if ! yq -e '.images' "$FILE" >/dev/null 2>&1; then
             yq -i '.images = []' "$FILE"
           fi
 
-          # Update existing image entry or append a new one with digest
-          if yq -e ".images[] | select(.name == strenv(IMAGE))" "$FILE" >/dev/null 2>&1; then
-            yq -i "( .images[] | select(.name == strenv(IMAGE)) ).digest = strenv(DIGEST)" "$FILE"
-          else
-            yq -i '.images += [{"name": strenv(IMAGE), "digest": strenv(DIGEST)}]' "$FILE"
-          fi
+          # Remove any existing entries for this image name and add new one with digest
+          yq -i "
+            .images = (.images // []) |
+            map(select(.name != env(IMAGE))) +
+            [{\"name\": env(IMAGE), \"digest\": env(DIGEST)}]
+          " "$FILE"
 
           echo "=== Updated kustomization.yaml ==="
           cat "$FILE"
+
+          # Validate the YAML is still valid
+          if ! yq eval '.' "$FILE" >/dev/null 2>&1; then
+            echo "ERROR: Generated invalid YAML"
+            exit 1
+          fi
 
           # Check if there are changes to commit
           if git diff --quiet; then
