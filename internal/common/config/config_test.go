@@ -37,6 +37,7 @@ func TestLoadConfig(t *testing.T) {
 				ServerPort:     "8080",
 				JWTSecret:      "test-secret",
 				TokenExpiryDur: 24 * time.Hour,
+				GinMode:        "debug",
 			},
 			wantErr: false,
 		},
@@ -50,6 +51,7 @@ func TestLoadConfig(t *testing.T) {
 				"DB_PORT":     "8081",
 				"SERVER_PORT": "5433",
 				"JWT_SECRET":  "test-secret",
+				"GIN_MODE":    "release",
 			},
 			wantConfig: &Config{
 				DBHost:         "test-db-host",
@@ -60,6 +62,7 @@ func TestLoadConfig(t *testing.T) {
 				ServerPort:     "5433",
 				JWTSecret:      "test-secret",
 				TokenExpiryDur: 24 * time.Hour,
+				GinMode:        "release",
 			},
 			wantErr: false,
 		},
