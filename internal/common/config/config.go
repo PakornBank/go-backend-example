@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
@@ -20,6 +21,7 @@ type Config struct {
 	ServerPort     string
 	JWTSecret      string
 	TokenExpiryDur time.Duration
+	GinMode        string
 }
 
 // LoadConfig loads the configuration from environment variables and returns a Config struct.
@@ -40,6 +42,7 @@ func LoadConfig() (*Config, error) {
 		ServerPort:     getEnv("SERVER_PORT", "8080"),
 		JWTSecret:      getEnv("JWT_SECRET", ""),
 		TokenExpiryDur: 24 * time.Hour,
+		GinMode:        getEnv("GIN_MODE", string(gin.DebugMode)),
 	}
 
 	if config.JWTSecret == "" {

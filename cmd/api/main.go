@@ -24,10 +24,7 @@ func main() {
 
 	container := di.NewContainer(cfg)
 
-	// Set Gin mode based on environment
-	if os.Getenv("GIN_MODE") == "release" {
-		gin.SetMode(gin.ReleaseMode)
-	}
+	gin.SetMode(cfg.GinMode)
 
 	r := gin.Default()
 	routes.SetupRoutes(r, container)
