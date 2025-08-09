@@ -21,7 +21,7 @@ func TestLoadConfig(t *testing.T) {
 			name:        "default values without JWT secret",
 			env:         map[string]string{},
 			wantErr:     true,
-			errContains: "jwt secret must be set in environment",
+			errContains: "JWT_SECRET environment variable must be set",
 		},
 		{
 			name: "default values with JWT secret",
