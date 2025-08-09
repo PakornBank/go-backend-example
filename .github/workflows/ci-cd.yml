@@ -175,6 +175,10 @@ jobs:
           IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           DIGEST="${{ needs.build-and-push.outputs.image-digest }}"
 
+          # Normalize image name to lowercase to match kustomize manifests and export for yq
+          IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          export IMAGE DIGEST
+
           echo "Image: $IMAGE"
           echo "Digest: $DIGEST"
 
