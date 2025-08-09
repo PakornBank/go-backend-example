@@ -24,8 +24,11 @@ type Config struct {
 
 // LoadConfig loads the configuration from environment variables and returns a Config struct.
 func LoadConfig() (*Config, error) {
-	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("error loading .env file: %v", err)
+	// Only try to load .env file in development (when file exists and is readable)
+	if _, err := os.Stat(".env"); err == nil {
+		if err := godotenv.Load(); err != nil {
+			fmt.Printf("Warning: .env file exists but couldn't be loaded: %v\n", err)
+		}
 	}
 
 	config := &Config{
@@ -35,12 +38,12 @@ func LoadConfig() (*Config, error) {
 		DBName:         getEnv("DB_NAME", "go_backend_db"),
 		DBPort:         getEnv("DB_PORT", "5432"),
 		ServerPort:     getEnv("SERVER_PORT", "8080"),
-		JWTSecret:      getEnv("JWT_SECRET", "your-secret-key"),
+		JWTSecret:      getEnv("JWT_SECRET", ""),
 		TokenExpiryDur: 24 * time.Hour,
 	}
 
-	if config.JWTSecret == "your-secret-key" {
-		return nil, errors.New("jwt secret must be set in environment")
+	if config.JWTSecret == "" {
+		return nil, errors.New("JWT_SECRET environment variable must be set")
 	}
 
 	return config, nil
