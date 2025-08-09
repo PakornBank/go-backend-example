@@ -98,8 +98,9 @@ func healthCheck() {
 	if resp.StatusCode == http.StatusOK {
 		log.Println("Health check passed")
 		os.Exit(0)
-	} else {
-		log.Printf("Health check failed with status: %d", resp.StatusCode)
-		os.Exit(1)
 	}
+
+	// If we reach here, the health check failed
+	log.Printf("Health check failed with status: %d", resp.StatusCode)
+	os.Exit(1)
 }
