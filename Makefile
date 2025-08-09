@@ -3,7 +3,7 @@
 setup:
 	go mod tidy
 	go install go.uber.org/mock/mockgen@latest
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.3.1
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.59.1
 
 generate:
 	go generate ./...

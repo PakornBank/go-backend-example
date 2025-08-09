@@ -6,15 +6,24 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/go-auth-api
   GO_VERSION: "1.24"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:15-alpine
@@ -54,14 +63,14 @@ jobs:
 
       - name: Generate mocks
         run: |
-          go install go.uber.org/mock/mockgen@latest
+          go install go.uber.org/mock/mockgen@v0.5.0
           export PATH=$PATH:$(go env GOPATH)/bin
           go generate ./...
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
-          version: latest
+          version: v1.59.1
           args: --timeout=5m --out-format=colored-line-number
 
       - name: Run tests
@@ -77,6 +86,7 @@ jobs:
   build-and-push:
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
@@ -111,7 +121,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=sha,prefix=main-{{date 'YYYYMMDD'}}-
+            type=sha,format=short
             type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.title=Go Auth API
@@ -128,6 +138,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
           build-args: |
             GO_VERSION=${{ env.GO_VERSION }}
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
@@ -136,6 +148,7 @@ jobs:
   update-manifests:
     needs: build-and-push
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
       GITOPS_REPO: ${{ github.repository_owner }}/go-auth-k8s-manifests
       GITOPS_BRANCH: main
@@ -149,18 +162,61 @@ jobs:
           path: gitops
           ref: ${{ env.GITOPS_BRANCH }}
 
-      - name: Update image tag
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update manifests with image digest
         run: |
           cd gitops
-          NEW_TAG=$(echo "${{ needs.build-and-push.outputs.image-tag }}" | head -n1)
-          echo "Updating image to: ${NEW_TAG}"
+          set -euo pipefail
 
-          # Update kustomization.yaml
-          sed -i "s|newTag:.*|newTag: ${NEW_TAG##*:}|g" overlays/production/kustomization.yaml
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          DIGEST="${{ needs.build-and-push.outputs.image-digest }}"
+
+          echo "Image: $IMAGE"
+          echo "Digest: $DIGEST"
+
+          if [ -z "$DIGEST" ]; then
+            echo "Image digest is empty; aborting."
+            exit 1
+          fi
+
+          FILE="overlays/production/kustomization.yaml"
+
+          # Ensure images array exists
+          if ! yq -e '.images' "$FILE" >/dev/null 2>&1; then
+            yq -i '.images = []' "$FILE"
+          fi
+
+          # Update existing image entry or append a new one with digest
+          if yq -e ".images[] | select(.name == strenv(IMAGE))" "$FILE" >/dev/null 2>&1; then
+            yq -i "( .images[] | select(.name == strenv(IMAGE)) ).digest = strenv(DIGEST)" "$FILE"
+          else
+            yq -i '.images += [{"name": strenv(IMAGE), "digest": strenv(DIGEST)}]' "$FILE"
+          fi
+
+          echo "=== Updated kustomization.yaml ==="
+          cat "$FILE"
+
+          # Check if there are changes to commit
+          if git diff --quiet; then
+            echo "No changes detected in manifests"
+            exit 0
+          fi
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          echo "=== Changes detected ==="
+          git diff
 
           # Commit and push changes
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add .
-          git commit -m "Update go-auth-api image to ${NEW_TAG}" || exit 0
+          git add "$FILE"
+          git commit -m "chore(gitops): update go-auth-api image digest
+
+          Source commit: ${{ github.sha }}
+          Image: $IMAGE@$DIGEST"
           git push
